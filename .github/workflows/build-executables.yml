@@ -123,9 +123,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: |
-            Installers/Windows/3D-Viewer-Setup.exe
-            Installers/Windows/*.exe
+          path: Installers/Windows/Output/3D-Viewer-Setup.exe
           if-no-files-found: error
 
   release:

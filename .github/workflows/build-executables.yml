@@ -46,9 +46,21 @@ jobs:
         run: |
           chmod +x Installers/Linux/build-deb.sh
           cd Installers/Linux
-          # Copy Linux binary and pck from the Godot export output
-          find ../../builds -path '*/Linux/*' -name '*.x86_64' -exec cp {} ./3D-Viewer.x86_64 \; || true
-          find ../../builds -path '*/Linux/*' -name '*.pck' -exec cp {} ./3D-Viewer.pck \; || true
+          echo "Looking for Linux binary..."
+          find ../../builds -type f -name '*.x86_64' -o -name '3D-Viewer' | head -20
+          LINUX_BIN=$(find ../../builds -type f \( -name '*.x86_64' -o -name '3D-Viewer' \) | head -1)
+          if [ -n "$LINUX_BIN" ]; then
+            cp "$LINUX_BIN" ./3D-Viewer.x86_64
+            echo "Copied $LINUX_BIN"
+          else
+            echo "ERROR: Linux binary not found"
+            find ../../builds -type f | head -50
+            exit 1
+          fi
+          LINUX_PCK=$(find ../../builds -type f -name '*.pck' | head -1)
+          if [ -n "$LINUX_PCK" ]; then
+            cp "$LINUX_PCK" ./3D-Viewer.pck
+          fi
           ls -la
           ./build-deb.sh
 
@@ -72,8 +84,22 @@ jobs:
         shell: bash
         run: |
           mkdir -p Installers/Windows
-          find builds -name '*.exe' -exec cp {} Installers/Windows/3D-Viewer.exe \; || true
-          find builds -name '*.pck' -exec cp {} Installers/Windows/3D-Viewer.pck \; || true
+          echo "Looking for Windows binary..."
+          find builds -type f -name '*.exe' | head -20
+          WIN_BIN=$(find builds -type f -name '*.exe' | head -1)
+          if [ -n "$WIN_BIN" ]; then
+            cp "$WIN_BIN" Installers/Windows/3D-Viewer.exe
+            echo "Copied $WIN_BIN"
+          else
+            echo "ERROR: Windows binary not found"
+            find builds -type f | head -50
+            exit 1
+          fi
+          WIN_PCK=$(find builds -type f -name '*.pck' | head -1)
+          if [ -n "$WIN_PCK" ]; then
+            cp "$WIN_PCK" Installers/Windows/3D-Viewer.pck
+          fi
+          ls -la Installers/Windows
 
       - name: Build Windows Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2

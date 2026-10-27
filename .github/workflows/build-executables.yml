@@ -3,7 +3,8 @@ name: Build Executables
 on:
   push:
     tags:
-      - 'v*'
+      - 'Desktop v*'
+      - 'Desktop V*'
   workflow_dispatch:
 
 permissions:

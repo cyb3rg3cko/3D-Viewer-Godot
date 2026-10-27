@@ -49,10 +49,25 @@ jobs:
           export/android/ndk_path = "${ANDROID_HOME}/ndk/23.2.8568313"
           EOF
 
+      - name: Debug export preset
+        run: |
+          echo "=== export_presets.cfg ==="
+          cat export_presets.cfg
+          echo ""
+          echo "=== editor settings ==="
+          cat ~/.config/godot/editor_settings-4.3.tres || echo "No editor settings"
+          echo ""
+          echo "=== ANDROID_HOME ==="
+          echo $ANDROID_HOME
+          ls -la $ANDROID_HOME/build-tools/ || true
+          ls -la $ANDROID_HOME/ndk/ || true
+
       - name: Export Android
         run: |
           mkdir -p build/android
-          godot --headless --export-release "Android" build/android/3D-Viewer.apk
+          godot --headless --verbose --export-release "Android" build/android/3D-Viewer.apk > export.log 2>&1 || true
+          echo "=== Export log (last 80 lines) ==="
+          tail -80 export.log
           if [ ! -f build/android/3D-Viewer.apk ]; then
             echo "ERROR: APK was not created"
             exit 1

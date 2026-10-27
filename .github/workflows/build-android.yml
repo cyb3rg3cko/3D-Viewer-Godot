@@ -3,8 +3,8 @@ name: Build Android
 on:
   push:
     tags:
-      - 'Android_v*'
-      - 'Android_V*'
+      - 'Android v*'
+      - 'Android V*'
   workflow_dispatch:
 
 permissions:
@@ -94,7 +94,17 @@ jobs:
       - name: Find and copy APK
         run: |
           mkdir -p build/android
-          find . -name '*.apk' -exec cp {} build/android/3D-Viewer.apk \;
+          # The firebelley action archives to a zip
+          ARCHIVE=$(find . -name 'Android.zip' -o -name '*.zip' | grep -v Godot | head -1)
+          if [ -n "$ARCHIVE" ]; then
+            echo "Found archive: $ARCHIVE"
+            unzip -o "$ARCHIVE" -d /tmp/android-extract
+            find /tmp/android-extract -name '*.apk' -exec cp {} build/android/3D-Viewer.apk \;
+          fi
+          # Fallback: look for raw APK
+          if [ ! -f build/android/3D-Viewer.apk ]; then
+            find . -name '*.apk' -exec cp {} build/android/3D-Viewer.apk \;
+          fi
           if [ ! -f build/android/3D-Viewer.apk ]; then
             echo "ERROR: APK not found"
             find . -name '*.apk' -o -name '*.zip' | head -20

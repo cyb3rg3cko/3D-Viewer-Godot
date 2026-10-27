@@ -39,7 +39,8 @@ jobs:
       - name: Export Android
         run: |
           mkdir -p build/android
-          godot --headless --export-release "Android" build/android/3D-Viewer.apk
+          ls -la /github/home/.local/share/godot/export_templates/4.3.stable/ | grep -E 'android|apk' || echo "No android templates found"
+          godot --headless --verbose --export-release "Android" build/android/3D-Viewer.apk 2>&1 | tail -100
 
       - name: Sign APK
         run: |

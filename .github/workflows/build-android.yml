@@ -1,0 +1,66 @@
+name: Build Android
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Godot
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          unzip -q Godot_v4.3-stable_export_templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+
+      - name: Export Android
+        run: |
+          mkdir -p build/android
+          godot --headless --export-release "Android" build/android/3D-Viewer.apk
+
+      - name: Sign APK
+        run: |
+          echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > keystore.jks
+          apksigner sign --ks keystore.jks \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out build/android/3D-Viewer-signed.apk build/android/3D-Viewer.apk
+          mv build/android/3D-Viewer-signed.apk build/android/3D-Viewer.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/android/3D-Viewer.apk
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/android/3D-Viewer.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

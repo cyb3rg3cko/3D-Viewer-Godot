@@ -45,12 +45,12 @@ jobs:
       - name: Build DEB
         run: |
           chmod +x Installers/Linux/build-deb.sh
-          # Adjust paths inside build-deb.sh if needed to match export output
           cd Installers/Linux
-          # Copy the Linux binary + pck into the current dir so the script finds them
-          find ../../builds -name '*.x86_64' -exec cp {} . \; || true
-          find ../../builds -name '*.pck' -exec cp {} . \; || true
-          ./build-deb.sh || echo "DEB build failed or paths need adjustment"
+          # Copy Linux binary and pck from the Godot export output
+          find ../../builds -path '*/Linux/*' -name '*.x86_64' -exec cp {} ./3D-Viewer.x86_64 \; || true
+          find ../../builds -path '*/Linux/*' -name '*.pck' -exec cp {} ./3D-Viewer.pck \; || true
+          ls -la
+          ./build-deb.sh
 
       - name: Upload DEB
         uses: actions/upload-artifact@v4

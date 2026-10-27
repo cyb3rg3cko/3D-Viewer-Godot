@@ -24,6 +24,7 @@ jobs:
           relative_project_path: .
           archive_output: true
           cache: true
+          presets_to_export: "Linux,Windows Desktop"
 
       - name: Upload raw builds
         uses: actions/upload-artifact@v4

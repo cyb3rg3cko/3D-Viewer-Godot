@@ -3,8 +3,8 @@ name: Build Android
 on:
   push:
     tags:
-      - 'Android v*'
-      - 'Android V*'
+      - 'Android_v*'
+      - 'Android_V*'
   workflow_dispatch:
 
 permissions:

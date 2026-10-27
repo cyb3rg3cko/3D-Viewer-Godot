@@ -46,9 +46,12 @@ jobs:
         run: |
           chmod +x Installers/Linux/build-deb.sh
           cd Installers/Linux
+          mkdir -p extracted
+          echo "Extracting Linux archive..."
+          unzip -o ../../builds/Linux.zip -d extracted || unzip -o ../../builds/*.zip -d extracted
           echo "Looking for Linux binary..."
-          find ../../builds -type f -name '*.x86_64' -o -name '3D-Viewer' | head -20
-          LINUX_BIN=$(find ../../builds -type f \( -name '*.x86_64' -o -name '3D-Viewer' \) | head -1)
+          find extracted -type f \( -name '*.x86_64' -o -name '3D-Viewer' \) | head -20
+          LINUX_BIN=$(find extracted -type f \( -name '*.x86_64' -o -name '3D-Viewer' \) | head -1)
           if [ -n "$LINUX_BIN" ]; then
             cp "$LINUX_BIN" ./3D-Viewer.x86_64
             echo "Copied $LINUX_BIN"
@@ -57,7 +60,7 @@ jobs:
             find ../../builds -type f | head -50
             exit 1
           fi
-          LINUX_PCK=$(find ../../builds -type f -name '*.pck' | head -1)
+          LINUX_PCK=$(find extracted -type f -name '*.pck' | head -1)
           if [ -n "$LINUX_PCK" ]; then
             cp "$LINUX_PCK" ./3D-Viewer.pck
           fi
@@ -84,9 +87,12 @@ jobs:
         shell: bash
         run: |
           mkdir -p Installers/Windows
+          mkdir -p builds/extracted
+          echo "Extracting archives..."
+          unzip -o "builds/Windows Desktop.zip" -d builds/extracted/windows || unzip -o builds/*.zip -d builds/extracted
           echo "Looking for Windows binary..."
-          find builds -type f -name '*.exe' | head -20
-          WIN_BIN=$(find builds -type f -name '*.exe' | head -1)
+          find builds/extracted -type f -name '*.exe' | head -20
+          WIN_BIN=$(find builds/extracted -type f -name '*.exe' | head -1)
           if [ -n "$WIN_BIN" ]; then
             cp "$WIN_BIN" Installers/Windows/3D-Viewer.exe
             echo "Copied $WIN_BIN"
@@ -95,7 +101,7 @@ jobs:
             find builds -type f | head -50
             exit 1
           fi
-          WIN_PCK=$(find builds -type f -name '*.pck' | head -1)
+          WIN_PCK=$(find builds/extracted -type f -name '*.pck' | head -1)
           if [ -n "$WIN_PCK" ]; then
             cp "$WIN_PCK" Installers/Windows/3D-Viewer.pck
           fi

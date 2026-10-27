@@ -42,8 +42,21 @@ jobs:
           ls -la /github/home/.local/share/godot/export_templates/4.3.stable/ | grep -E 'android|apk' || echo "No android templates found"
           godot --headless --verbose --export-release "Android" build/android/3D-Viewer.apk 2>&1 | tail -100
 
+      - name: Install Android build-tools
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq openjdk-17-jdk-headless wget unzip
+          mkdir -p /opt/android-sdk
+          cd /opt/android-sdk
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          yes | ./cmdline-tools/bin/sdkmanager --sdk_root=/opt/android-sdk "build-tools;34.0.0" || true
+          export PATH="$PATH:/opt/android-sdk/build-tools/34.0.0"
+          echo "/opt/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH || true
+
       - name: Sign APK
         run: |
+          export PATH="$PATH:/opt/android-sdk/build-tools/34.0.0"
           echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > keystore.jks
           apksigner sign --ks keystore.jks \
             --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \

@@ -15,6 +15,7 @@ UninstallDisplayIcon={app}\3D-Viewer.exe
 
 [Files]
 Source: "3D-Viewer.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "3D-Viewer.pck"; DestDir: "{app}"; Flags: ignoreversion
 Source: "app-icon.png"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

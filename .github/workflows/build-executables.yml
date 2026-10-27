@@ -104,6 +104,9 @@ jobs:
           WIN_PCK=$(find builds/extracted -type f -name '*.pck' | head -1)
           if [ -n "$WIN_PCK" ]; then
             cp "$WIN_PCK" Installers/Windows/3D-Viewer.pck
+            echo "Copied $WIN_PCK"
+          else
+            echo "WARNING: No .pck found"
           fi
           # Copy icon
           if [ -f app-icon.png ]; then
@@ -120,7 +123,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: Installers/Windows/*.exe
+          path: |
+            Installers/Windows/3D-Viewer-Setup.exe
+            Installers/Windows/*.exe
+          if-no-files-found: error
 
   release:
     runs-on: ubuntu-latest

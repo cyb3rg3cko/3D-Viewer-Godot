@@ -63,15 +63,25 @@ jobs:
           ls -la $ANDROID_HOME/ndk/ || true
 
       - name: Export Android
+        uses: firebelley/godot-export@v8.0.0
+        with:
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          relative_project_path: .
+          archive_output: true
+          presets_to_export: "Android"
+          cache: false
+
+      - name: Find and copy APK
         run: |
           mkdir -p build/android
-          godot --headless --verbose --export-release "Android" build/android/3D-Viewer.apk > export.log 2>&1 || true
-          echo "=== Export log (last 80 lines) ==="
-          tail -80 export.log
+          find . -name '*.apk' -exec cp {} build/android/3D-Viewer.apk \;
           if [ ! -f build/android/3D-Viewer.apk ]; then
-            echo "ERROR: APK was not created"
+            echo "ERROR: APK not found"
+            find . -name '*.apk' -o -name '*.zip' | head -20
             exit 1
           fi
+          ls -la build/android/
 
       - name: Sign APK
         run: |

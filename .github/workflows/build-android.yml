@@ -25,37 +25,40 @@ jobs:
           mv /tmp/templates/templates/* /github/home/.local/share/godot/export_templates/4.3.stable/
           ls /github/home/.local/share/godot/export_templates/4.3.stable/ | grep android
 
-      - name: Configure Java SDK path
+      - name: Configure Android paths
         run: |
-          mkdir -p /github/home/.config/godot
-          cat > /github/home/.config/godot/editor_settings-4.3.tres << EOF
+          mkdir -p /github/home/.config/godot /root/.config/godot
+          for f in /github/home/.config/godot/editor_settings-4.3.tres /root/.config/godot/editor_settings-4.3.tres; do
+            cat > "$f" << EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
-          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
           export/android/android_sdk_path = "/usr/lib/android-sdk"
+          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
+          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
           EOF
+          done
 
       - name: Export Android
         run: |
           mkdir -p build/android
-          ls -la /github/home/.local/share/godot/export_templates/4.3.stable/ | grep -E 'android|apk' || echo "No android templates found"
-          godot --headless --verbose --export-release "Android" build/android/3D-Viewer.apk 2>&1 | tail -100
-
-      - name: Install Android build-tools
-        run: |
-          apt-get update -qq
-          apt-get install -y -qq openjdk-17-jdk-headless wget unzip
-          mkdir -p /opt/android-sdk
-          cd /opt/android-sdk
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-11076708_latest.zip
-          yes | ./cmdline-tools/bin/sdkmanager --sdk_root=/opt/android-sdk "build-tools;34.0.0" || true
-          export PATH="$PATH:/opt/android-sdk/build-tools/34.0.0"
-          echo "/opt/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH || true
+          godot --headless --verbose --export-debug "Android" build/android/3D-Viewer.apk 2>&1 | tail -50
+          if [ ! -f build/android/3D-Viewer.apk ]; then
+            echo "ERROR: APK was not created"
+            find . -name '*.apk' 2>/dev/null || true
+            exit 1
+          fi
+          echo "APK created"
+          ls -la build/android/
 
       - name: Sign APK
         run: |
+          if [ ! -f build/android/3D-Viewer.apk ]; then
+            echo "ERROR: APK not found for signing"
+            exit 1
+          fi
           export PATH="$PATH:/opt/android-sdk/build-tools/34.0.0"
           echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > keystore.jks
           apksigner sign --ks keystore.jks \
@@ -64,6 +67,7 @@ jobs:
             --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
             --out build/android/3D-Viewer-signed.apk build/android/3D-Viewer.apk
           mv build/android/3D-Viewer-signed.apk build/android/3D-Viewer.apk
+          echo "Signed successfully"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

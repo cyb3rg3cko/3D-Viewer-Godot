@@ -105,6 +105,10 @@ jobs:
           if [ -n "$WIN_PCK" ]; then
             cp "$WIN_PCK" Installers/Windows/3D-Viewer.pck
           fi
+          # Copy icon
+          if [ -f app-icon.png ]; then
+            cp app-icon.png Installers/Windows/app-icon.png
+          fi
           ls -la Installers/Windows
 
       - name: Build Windows Installer

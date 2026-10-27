@@ -12,56 +12,15 @@ permissions:
 jobs:
   android:
     runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: '11076708'
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;23.2.8568313'
-
-      - name: Install Godot
-        run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
-          unzip -q Godot_v4.3-stable_linux.x86_64.zip
-          sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
-          sudo chmod +x /usr/local/bin/godot
-          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
-          unzip -q Godot_v4.3-stable_export_templates.tpz -d /tmp/templates
-          mv /tmp/templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
-
-      - name: Configure Godot Android, Java, and NDK paths
-        run: |
-          mkdir -p ~/.config/godot
-          NDK_PATH="/usr/local/lib/android/sdk/ndk/23.2.8568313"
-          cat > ~/.config/godot/editor_settings-4.3.tres << EOF
-          [gd_resource type="EditorSettings" format=3]
-
-          [resource]
-          export/android/android_sdk_path = "/usr/local/lib/android/sdk"
-          export/android/java_sdk_path = "${JAVA_HOME}"
-          export/android/ndk_path = "${NDK_PATH}"
-          export/android/debug_keystore = ""
-          export/android/debug_keystore_user = ""
-          export/android/debug_keystore_pass = ""
-          EOF
-          cp ~/.config/godot/editor_settings-4.3.tres ~/.config/godot/editor_settings-4.tres
-          echo "NDK path: $NDK_PATH"
 
       - name: Export Android
         run: |
           mkdir -p build/android
           godot --headless --export-release "Android" build/android/3D-Viewer.apk
-        env:
-          JAVA_HOME: ${{ env.JAVA_HOME }}
 
       - name: Sign APK
         run: |

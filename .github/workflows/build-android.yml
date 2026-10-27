@@ -12,62 +12,63 @@ permissions:
 jobs:
   android:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.3
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install export templates
-        run: |
-          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-          mkdir -p /github/home/.local/share/godot/export_templates/4.3.stable
-          unzip -q Godot_v4.3-stable_export_templates.tpz -d /tmp/templates
-          mv /tmp/templates/templates/* /github/home/.local/share/godot/export_templates/4.3.stable/
-          ls /github/home/.local/share/godot/export_templates/4.3.stable/ | grep android
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-      - name: Configure Android paths
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 ndk;23.2.8568313'
+
+      - name: Install Godot
         run: |
-          mkdir -p /github/home/.config/godot /root/.config/godot
-          for f in /github/home/.config/godot/editor_settings-4.3.tres /root/.config/godot/editor_settings-4.3.tres; do
-            cat > "$f" << EOF
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          unzip -q Godot_v4.3-stable_export_templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+
+      - name: Configure Godot Android paths
+        run: |
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.3.tres << EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
-          export/android/android_sdk_path = "/usr/lib/android-sdk"
-          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
-          export/android/debug_keystore = "/root/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
+          export/android/android_sdk_path = "${ANDROID_HOME}"
+          export/android/java_sdk_path = "${JAVA_HOME}"
+          export/android/ndk_path = "${ANDROID_HOME}/ndk/23.2.8568313"
           EOF
-          done
 
       - name: Export Android
         run: |
           mkdir -p build/android
-          godot --headless --verbose --export-debug "Android" build/android/3D-Viewer.apk 2>&1 | tail -50
+          godot --headless --export-release "Android" build/android/3D-Viewer.apk
           if [ ! -f build/android/3D-Viewer.apk ]; then
             echo "ERROR: APK was not created"
-            find . -name '*.apk' 2>/dev/null || true
             exit 1
           fi
-          echo "APK created"
-          ls -la build/android/
 
       - name: Sign APK
         run: |
-          if [ ! -f build/android/3D-Viewer.apk ]; then
-            echo "ERROR: APK not found for signing"
-            exit 1
-          fi
-          export PATH="$PATH:/opt/android-sdk/build-tools/34.0.0"
           echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > keystore.jks
-          apksigner sign --ks keystore.jks \
+          ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign \
+            --ks keystore.jks \
             --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
             --ks-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
             --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out build/android/3D-Viewer-signed.apk build/android/3D-Viewer.apk
+            --out build/android/3D-Viewer-signed.apk \
+            build/android/3D-Viewer.apk
           mv build/android/3D-Viewer-signed.apk build/android/3D-Viewer.apk
-          echo "Signed successfully"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
